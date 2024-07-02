@@ -1,0 +1,233 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+
+// Necessary for Next auth
+model Account {
+  id                String  @id @default(cuid()) @map("_id")
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?    @db.Text
+  access_token      String?    @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String    @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid()) @map("_id")
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid()) @map("_id")
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid()) @map("_id")
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Collection {
+  id                String   @id @default(cuid()) @map("_id")
+  identifier        String
+  active            Boolean  @default(false)
+  featured          Boolean  @default(false)
+  status            String   @default("Predrop")
+  metaData          Json
+  nfts              Nft[]
+  contractId        String?
+  contractAddress   String?
+  saleContract      String?
+  whiteListContract String?
+  tokenCount        Int?
+  contract          Contract? @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+  thumb             String?
+  backgroundImage   String?
+  producer          String?
+  blockchain        String?
+  creatorRoyalty    String?
+  @@unique([identifier])
+}
+
+model Nft {
+  id           String     @id @default(cuid()) @map("_id")
+  identifier   String
+  metaDataUrl  String
+  metaData     Json
+  collectionId String
+  tokenId      Int
+  owner        String
+  price        String
+  isListed     Boolean  @default(false)
+  status       String
+  history      Json
+  transactions Transaction[]
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+  thumb        String @db.Text
+  
+  @@unique([identifier])
+}
+
+model Asset {
+  id           String     @id @default(cuid()) @map("_id")
+  mime         String
+  metaData     Json 
+  data         String @db.Text
+}
+
+model Whitelisting {
+  id           String     @id @default(cuid()) @map("_id")
+  reference    String
+  address      String
+  events       Json
+  status       String
+  contract     String
+}
+
+model Contract {
+  id          String       @id @default(cuid()) @map("_id")
+  identifier  String
+  name        String
+  description String
+  chain       String
+  Collection  Collection[]
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([identifier])
+}
+
+model Pages {
+  id          String       @id @default(cuid()) @map("_id")
+  identifier  String
+  title       String
+  content     String  @db.Text
+  @@unique([identifier])
+}
+
+model Assets {
+  id          String       @id @default(cuid()) @map("_id")
+  mime        String
+  data        String  @db.Text
+}
+
+model Transaction {
+  id            String       @id @default(cuid()) @map("_id")
+  collectionId  String
+  nftId         String
+  nft           Nft @relation(fields: [nftId], references: [id], onDelete: Cascade)
+  hash          String
+  transaction   Json  
+  from          String
+  to            String
+  price         String
+  type          String    
+  timeStamp     String  
+  contractAddress String
+  tokenId         Int  
+}
+
+model nfts {
+    id                  String   @id @default(cuid())
+    updated             DateTime @default(now())
+    token_id            String   
+    token_address       String
+    token_uri           String
+    metadata            String  @db.Text
+    contract_type       String
+    token_hash          String
+    minter_address      String
+    block_number_minted String
+    transaction_minted  String
+    last_token_uri_sync String
+    last_metadata_sync  String
+    created_at          String
+    possible_spam       Boolean @default(false)
+
+    @@index([token_id, token_address])
+}
+
+model Os_nft {
+  id            String   @id @default(cuid())
+  identifier    String   @unique
+  metaDataUrl   String @db.Text
+  title         String @db.Text
+  description   String @db.Text
+  metaData      String @db.Text
+  tokenId       String
+  owner         String
+  price         Float
+  isListed      Boolean @default(false)
+  status        String
+  history       Json
+  createdAt     Int
+  updatedAt     Int
+  thumb         String @db.Text
+  collectionId  String
+  rarity      String
+  createdDate DateTime
+  closingDate DateTime
+  listingTime Int
+  expirationTime Int
+  orderHash   String
+  platForm    String
+  token       String
+  permalink    String @db.Text
+  imageUrl    String @db.Text
+  attributes   String @db.Text
+  collection    Os_collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+}
+
+model Os_collection {
+  id                String  @id @default(cuid())
+  status            String
+  title             String @db.Text
+  description       String @db.Text
+  metaData          String @db.Text
+  contractAddress   String @unique
+  saleContract      String
+  tokenCount        Int
+  created_at        Int
+  updatedAt         Int
+  thumb             String @db.Text
+  creator           String @db.Text
+  blockchain        String
+  creatorRoyalty    String
+  nfts              Os_nft[]    
+}
